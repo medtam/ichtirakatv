@@ -44,12 +44,14 @@ const ReportsPage: React.FC = () => {
 
     const { filteredCustomers, filteredExpenses } = filteredData;
     
+    const collectedIncome = filteredCustomers.filter(c => (c.paymentStatus || 'paid') === 'paid').reduce((sum, c) => sum + c.price, 0);
     const totalIncome = filteredCustomers.reduce((sum, c) => sum + c.price, 0);
+    const unpaidAmount = totalIncome - collectedIncome;
     const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const netProfit = totalIncome - totalExpenses;
+    const netProfit = collectedIncome - totalExpenses;
 
     const financialSummaryData = [
-        { name: 'المداخيل', value: totalIncome, fill: '#22c55e' },
+        { name: 'المداخيل المحصلة', value: collectedIncome, fill: '#22c55e' },
         { name: 'المصاريف', value: totalExpenses, fill: '#ef4444' }
     ];
 
@@ -81,6 +83,8 @@ const ReportsPage: React.FC = () => {
             head: [['المجموع', 'البند']],
             body: [
                 [`${totalIncome.toFixed(2)}€`, 'إجمالي المداخيل'],
+                [`${collectedIncome.toFixed(2)}€`, 'المداخيل المحصلة'],
+                [`${unpaidAmount.toFixed(2)}€`, 'مبالغ غير مدفوعة'],
                 [`${totalExpenses.toFixed(2)}€`, 'إجمالي المصاريف'],
                 [`${netProfit.toFixed(2)}€`, 'الربح الصافي'],
             ],
@@ -97,8 +101,9 @@ const ReportsPage: React.FC = () => {
             doc.text('المشتركون الجدد في الفترة المحددة', 200, lastY + 10, { align: 'right' });
             doc.autoTable({
                 startY: lastY + 15,
-                head: [['السعر', 'المدة (شهر)', 'تاريخ البدء', 'رقم الهاتف', 'الاسم']],
+                head: [['حالة الدفع', 'السعر', 'المدة (شهر)', 'تاريخ البدء', 'رقم الهاتف', 'الاسم']],
                 body: filteredCustomers.map(c => [
+                    (c.paymentStatus || 'paid') === 'paid' ? 'تم الدفع' : 'لم يدفع',
                     `${c.price.toFixed(2)}€`,
                     c.duration,
                     new Date(c.startDate).toLocaleDateString('ar-EG', { numberingSystem: 'latn' }),
@@ -137,6 +142,8 @@ const ReportsPage: React.FC = () => {
     const exportToExcel = () => {
         const summaryData = [
             { البند: 'إجمالي المداخيل', المجموع: `${totalIncome.toFixed(2)}€` },
+            { البند: 'المداخيل المحصلة', المجموع: `${collectedIncome.toFixed(2)}€` },
+            { البند: 'مبالغ غير مدفوعة', المجموع: `${unpaidAmount.toFixed(2)}€` },
             { البند: 'إجمالي المصاريف', المجموع: `${totalExpenses.toFixed(2)}€` },
             { البند: 'الربح الصافي', المجموع: `${netProfit.toFixed(2)}€` },
         ];
@@ -146,7 +153,8 @@ const ReportsPage: React.FC = () => {
             'الهاتف': c.phone,
             'تاريخ البدء': new Date(c.startDate).toLocaleDateString('ar-EG', { numberingSystem: 'latn' }),
             'المدة (أشهر)': c.duration,
-            'السعر': c.price
+            'السعر': c.price,
+            'حالة الدفع': (c.paymentStatus || 'paid') === 'paid' ? 'تم الدفع' : 'لم يدفع'
         }));
 
         const expenseData = filteredExpenses.map(e => ({
@@ -191,8 +199,8 @@ const ReportsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-green-100 p-6 rounded-lg shadow">
-                    <h3 className="text-lg font-semibold text-green-800">إجمالي المداخيل</h3>
-                    <p className="text-3xl font-bold text-green-900">{totalIncome.toFixed(2)}€</p>
+                    <h3 className="text-lg font-semibold text-green-800">المداخيل المحصلة</h3>
+                    <p className="text-3xl font-bold text-green-900">{collectedIncome.toFixed(2)}€</p>
                 </div>
                 <div className="bg-red-100 p-6 rounded-lg shadow">
                     <h3 className="text-lg font-semibold text-red-800">إجمالي المصاريف</h3>
@@ -207,13 +215,13 @@ const ReportsPage: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-white p-6 rounded-lg shadow-md">
                     <h2 className="text-xl font-bold text-gray-800 mb-4">ملخص الفترة المحددة</h2>
-                     {totalIncome > 0 || totalExpenses > 0 ? (
+                     {collectedIncome > 0 || totalExpenses > 0 ? (
                         <div style={{ width: '100%', height: 300 }}>
                             <ResponsiveContainer>
                                 <BarChart data={financialSummaryData} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis type="number" domain={[0, 'dataMax + 100']} />
-                                    <YAxis type="category" dataKey="name" width={60} />
+                                    <YAxis type="category" dataKey="name" width={80} />
                                     <Tooltip formatter={(value) => `${Number(value).toFixed(2)}€`} />
                                     <Bar dataKey="value" barSize={40} />
                                 </BarChart>
