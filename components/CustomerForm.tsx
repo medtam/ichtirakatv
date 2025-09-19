@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Customer } from '../types';
+import { Customer, PaymentStatus } from '../types';
 import { useAppContext } from '../context/AppContext';
 
 interface CustomerFormProps {
@@ -14,6 +14,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ onClose, customerToEdit }) 
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [duration, setDuration] = useState(tiers[0]?.duration || 1);
   const [price, setPrice] = useState(tiers[0]?.price || 0);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('paid');
 
   useEffect(() => {
     if (customerToEdit) {
@@ -22,6 +23,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ onClose, customerToEdit }) 
       setStartDate(new Date(customerToEdit.startDate).toISOString().split('T')[0]);
       setDuration(customerToEdit.duration);
       setPrice(customerToEdit.price);
+      setPaymentStatus(customerToEdit.paymentStatus || 'paid');
     } else {
       // Reset to defaults for a new customer form
       setName('');
@@ -30,12 +32,13 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ onClose, customerToEdit }) 
       const firstTier = tiers[0] || { duration: 1, price: 0 };
       setDuration(firstTier.duration);
       setPrice(firstTier.price);
+      setPaymentStatus('paid');
     }
   }, [customerToEdit, tiers]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const customerData = { name, phone, startDate, duration: Number(duration), price: Number(price) };
+    const customerData = { name, phone, startDate, duration: Number(duration), price: Number(price), paymentStatus };
     if (customerToEdit) {
       updateCustomer({ ...customerToEdit, ...customerData });
     } else {
@@ -92,6 +95,13 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ onClose, customerToEdit }) 
                 step="0.01"
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
+          </div>
+          <div>
+            <label htmlFor="paymentStatus" className="block text-sm font-medium text-gray-700">حالة الدفع</label>
+            <select id="paymentStatus" value={paymentStatus} onChange={e => setPaymentStatus(e.target.value as PaymentStatus)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+              <option value="paid">تم الدفع</option>
+              <option value="unpaid">لم يدفع</option>
+            </select>
           </div>
           <div className="flex justify-end space-x-2 space-x-reverse pt-4">
             <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">إلغاء</button>
