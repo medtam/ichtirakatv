@@ -1,15 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { Customer, SubscriptionStatus } from '../types';
+import { Customer, SubscriptionStatus, PaymentStatus } from '../types';
 import CustomerForm from '../components/CustomerForm';
-import { PlusCircleIcon, EditIcon, Trash2Icon, RefreshCwIcon } from '../components/icons';
+import { PlusCircleIcon, EditIcon, Trash2Icon, RefreshCwIcon, CheckCircleIcon } from '../components/icons';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { getExpiryDate, getSubscriptionStatus } from '../utils/dateUtils';
 
 type FilterType = 'all' | SubscriptionStatus;
 
 const CustomersPage: React.FC = () => {
-    const { customers, deleteCustomer, renewCustomer } = useAppContext();
+    const { customers, deleteCustomer, renewCustomer, markCustomerAsPaid } = useAppContext();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [customerToEdit, setCustomerToEdit] = useState<Customer | undefined>(undefined);
     const [searchTerm, setSearchTerm] = useState('');
@@ -37,7 +37,7 @@ const CustomersPage: React.FC = () => {
         setConfirmModal({
             isOpen: true,
             title: 'تأكيد التجديد',
-            message: 'هل أنت متأكد من رغبتك في تجديد هذا الاشتراك؟ سيتم تمديد الاشتراك من تاريخ انتهائه، أو من تاريخ اليوم إذا كان منتهياً.',
+            message: 'هل أنت متأكد من رغبتك في تجديد هذا الاشتراك؟ سيتم تمديد الاشتراك وتحديث حالة الدفع إلى "لم يدفع".',
             onConfirm: () => {
                 renewCustomer(id);
                 setConfirmModal({ ...confirmModal, isOpen: false });
@@ -60,6 +60,10 @@ const CustomersPage: React.FC = () => {
             confirmButtonClass: 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
         });
     };
+    
+    const handleMarkAsPaid = (id: string) => {
+        markCustomerAsPaid(id);
+    };
 
     const filteredCustomers = useMemo(() => {
         return customers
@@ -72,10 +76,15 @@ const CustomersPage: React.FC = () => {
             .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
     }, [customers, searchTerm, filter]);
 
-    const statusConfig: Record<SubscriptionStatus, { text: string, className: string, rowClassName: string }> = {
+    const subStatusConfig: Record<SubscriptionStatus, { text: string, className: string, rowClassName: string }> = {
         active: { text: 'نشط', className: 'bg-green-100 text-green-800', rowClassName: 'bg-white' },
         expiringSoon: { text: 'ينتهي قريباً', className: 'bg-yellow-100 text-yellow-800', rowClassName: 'bg-yellow-50' },
         expired: { text: 'منتهي', className: 'bg-red-100 text-red-800', rowClassName: 'bg-red-50' }
+    };
+
+    const paymentStatusConfig: Record<PaymentStatus, { text: string, className: string }> = {
+        paid: { text: 'تم الدفع', className: 'bg-green-100 text-green-800' },
+        unpaid: { text: 'لم يدفع', className: 'bg-orange-100 text-orange-800' }
     };
 
     return (
@@ -118,7 +127,8 @@ const CustomersPage: React.FC = () => {
                             <th className="p-3 text-sm font-semibold tracking-wide">رقم الهاتف</th>
                             <th className="p-3 text-sm font-semibold tracking-wide">تاريخ البدء</th>
                             <th className="p-3 text-sm font-semibold tracking-wide">تاريخ الانتهاء</th>
-                            <th className="p-3 text-sm font-semibold tracking-wide">الحالة</th>
+                            <th className="p-3 text-sm font-semibold tracking-wide">حالة الاشتراك</th>
+                            <th className="p-3 text-sm font-semibold tracking-wide">حالة الدفع</th>
                             <th className="p-3 text-sm font-semibold tracking-wide">السعر</th>
                             <th className="p-3 text-sm font-semibold tracking-wide text-center">إجراءات</th>
                         </tr>
@@ -126,21 +136,34 @@ const CustomersPage: React.FC = () => {
                     <tbody className="divide-y divide-gray-200">
                         {filteredCustomers.map(customer => {
                             const expiryDate = getExpiryDate(customer.startDate, customer.duration);
-                            const statusInfo = statusConfig[customer.status];
+                            const subStatusInfo = subStatusConfig[customer.status];
+                            const paymentStatus = customer.paymentStatus || 'paid';
+                            const paymentStatusInfo = paymentStatusConfig[paymentStatus];
+
                             return (
-                                <tr key={customer.id} className={`${statusInfo.rowClassName} hover:bg-opacity-50`}>
+                                <tr key={customer.id} className={`${subStatusInfo.rowClassName} hover:bg-opacity-50`}>
                                     <td className="p-3 text-sm text-gray-700">{customer.name}</td>
                                     <td className="p-3 text-sm text-gray-700">{customer.phone}</td>
                                     <td className="p-3 text-sm text-gray-700">{new Date(customer.startDate).toLocaleDateString('ar-EG', { numberingSystem: 'latn' })}</td>
                                     <td className="p-3 text-sm text-gray-700">{expiryDate.toLocaleDateString('ar-EG', { numberingSystem: 'latn' })}</td>
                                     <td className="p-3 text-sm">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusInfo.className}`}>
-                                            {statusInfo.text}
+                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${subStatusInfo.className}`}>
+                                            {subStatusInfo.text}
+                                        </span>
+                                    </td>
+                                    <td className="p-3 text-sm">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${paymentStatusInfo.className}`}>
+                                            {paymentStatusInfo.text}
                                         </span>
                                     </td>
                                     <td className="p-3 text-sm text-gray-700">{customer.price}€</td>
                                     <td className="p-3 text-center">
                                         <div className="flex justify-center items-center space-x-2 space-x-reverse">
+                                            {paymentStatus === 'unpaid' && (
+                                                <button onClick={() => handleMarkAsPaid(customer.id)} title="تسجيل دفعة" className="text-green-500 hover:text-green-700">
+                                                    <CheckCircleIcon className="w-5 h-5"/>
+                                                </button>
+                                            )}
                                             <button onClick={() => handleRenew(customer.id)} title="تجديد" className="text-blue-500 hover:text-blue-700"><RefreshCwIcon className="w-5 h-5"/></button>
                                             <button onClick={() => openFormForEdit(customer)} title="تعديل" className="text-yellow-500 hover:text-yellow-700"><EditIcon className="w-5 h-5"/></button>
                                             <button onClick={() => handleDelete(customer.id)} title="حذف" className="text-red-500 hover:text-red-700"><Trash2Icon className="w-5 h-5"/></button>
