@@ -2,8 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Customer, Expense } from '../types';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Bar } from 'recharts';
-// Fix: Use named import for jsPDF to allow module augmentation to work correctly.
-import { jsPDF } from 'jspdf';
+// Fix: Use default import for jsPDF to allow module augmentation to work correctly.
+import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { utils, writeFile } from 'xlsx';
 
