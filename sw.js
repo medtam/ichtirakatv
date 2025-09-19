@@ -1,20 +1,19 @@
 const CACHE_NAME = 'subscription-manager-cache-v1';
 // This list should ideally include all the assets needed for the app to run offline.
-// The index.tsx and other components are bundled, but the external scripts are not.
 const urlsToCache = [
     '/',
     '/index.html',
-    // External dependencies
+    '/icon.svg',
+    '/manifest.webmanifest',
+    // External dependencies from importmap
     'https://cdn.tailwindcss.com',
     'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap',
-    'https://esm.sh/react@^19.1.1',
-    'https://esm.sh/react-dom@^19.1.1/client',
-    'https://esm.sh/react@^19.1.1/',
-    'https://esm.sh/react-dom@^19.1.1/',
-    'https://esm.sh/recharts@^3.1.2',
-    'https://esm.sh/xlsx@^0.18.5',
-    'https://esm.sh/jspdf-autotable@^5.0.2',
-    'https://esm.sh/jspdf@^3.0.1'
+    'https://aistudiocdn.com/react@^19.1.1',
+    'https://aistudiocdn.com/react-dom@^19.1.1/',
+    'https://aistudiocdn.com/recharts@^3.2.1',
+    'https://aistudiocdn.com/jspdf@^3.0.3',
+    'https://aistudiocdn.com/jspdf-autotable@^5.0.2',
+    'https://aistudiocdn.com/xlsx@^0.18.5'
 ];
 
 // Install event: cache all the essential assets.
@@ -47,6 +46,8 @@ self.addEventListener('activate', event => {
             })
         ))
     );
+    // clients.claim() ensures that the new service worker takes control of the page immediately.
+    return self.clients.claim();
 });
 
 // Fetch event: serve assets from cache if available, otherwise fetch from network.
