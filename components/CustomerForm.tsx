@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Customer, SubscriptionTier } from '../types';
+import { Customer } from '../types';
 import { useAppContext } from '../context/AppContext';
 
 interface CustomerFormProps {
@@ -22,22 +21,25 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ onClose, customerToEdit }) 
       setPhone(customerToEdit.phone);
       setStartDate(new Date(customerToEdit.startDate).toISOString().split('T')[0]);
       setDuration(customerToEdit.duration);
+      setPrice(customerToEdit.price);
+    } else {
+      // Reset to defaults for a new customer form
+      setName('');
+      setPhone('');
+      setStartDate(new Date().toISOString().split('T')[0]);
+      const firstTier = tiers[0] || { duration: 1, price: 0 };
+      setDuration(firstTier.duration);
+      setPrice(firstTier.price);
     }
-  }, [customerToEdit]);
-
-  useEffect(() => {
-    const selectedTier = tiers.find(t => t.duration === Number(duration));
-    if (selectedTier) {
-      setPrice(selectedTier.price);
-    }
-  }, [duration, tiers]);
+  }, [customerToEdit, tiers]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const customerData = { name, phone, startDate, duration: Number(duration), price: Number(price) };
     if (customerToEdit) {
-      updateCustomer({ ...customerToEdit, name, phone, startDate, duration: Number(duration) });
+      updateCustomer({ ...customerToEdit, ...customerData });
     } else {
-      addCustomer({ name, phone, startDate, duration: Number(duration) });
+      addCustomer(customerData);
     }
     onClose();
   };
@@ -45,6 +47,10 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ onClose, customerToEdit }) 
   const handleDurationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newDuration = Number(e.target.value);
     setDuration(newDuration);
+    const selectedTier = tiers.find(t => t.duration === newDuration);
+    if (selectedTier) {
+      setPrice(selectedTier.price);
+    }
   };
 
   return (
@@ -74,8 +80,18 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ onClose, customerToEdit }) 
               ))}
             </select>
           </div>
-          <div className="p-3 bg-indigo-50 rounded-md text-center">
-            <span className="text-lg font-bold text-indigo-700">سعر الاشتراك: {price}€</span>
+          <div>
+            <label htmlFor="price" className="block text-sm font-medium text-gray-700">سعر الاشتراك (€)</label>
+            <input
+                type="number"
+                id="price"
+                value={price}
+                onChange={e => setPrice(parseFloat(e.target.value) || 0)}
+                required
+                min="0"
+                step="0.01"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            />
           </div>
           <div className="flex justify-end space-x-2 space-x-reverse pt-4">
             <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">إلغاء</button>
