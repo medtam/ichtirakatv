@@ -14,6 +14,7 @@ interface AppContextType {
   updateCustomer: (customer: Customer) => void;
   deleteCustomer: (id: string) => void;
   renewCustomer: (id: string) => void;
+  markCustomerAsPaid: (id: string) => void;
   addExpense: (expense: Omit<Expense, 'id'>) => void;
   updateExpense: (expense: Expense) => void;
   deleteExpense: (id: string) => void;
@@ -85,16 +86,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // If expired, renew from today. If not, extend from the expiry date.
         const newStartDate = expiryDate < today ? today : expiryDate;
         
-        const renewedCustomer = {
+        const renewedCustomer: Customer = {
             ...customer,
             startDate: newStartDate.toISOString(),
             // Re-fetch price in case tiers have changed
-            price: findTierPrice(customer.duration) 
+            price: findTierPrice(customer.duration),
+            paymentStatus: 'unpaid'
         };
         
         return prevCustomers.map(c => c.id === id ? renewedCustomer : c);
     });
-    addToast('تم تجديد الاشتراك بنجاح!', 'success');
+    addToast('تم تجديد الاشتراك بنجاح! الرجاء تسجيل الدفعة.', 'success');
+  };
+
+  const markCustomerAsPaid = (id: string) => {
+    setCustomers(prev => prev.map(c => c.id === id ? { ...c, paymentStatus: 'paid' } : c));
+    addToast('تم تسجيل الدفعة بنجاح', 'success');
   };
 
   const addExpense = (expense: Omit<Expense, 'id'>) => {
@@ -136,7 +143,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       customers, setCustomers,
       expenses, setExpenses,
       tiers, setTiers,
-      addCustomer, updateCustomer, deleteCustomer, renewCustomer,
+      addCustomer, updateCustomer, deleteCustomer, renewCustomer, markCustomerAsPaid,
       addExpense, updateExpense, deleteExpense,
       getAppData, loadAppData,
       toasts, addToast, removeToast,
