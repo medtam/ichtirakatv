@@ -53,6 +53,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return customers.filter(c => getSubscriptionStatus(c) === 'expiringSoon').length;
   }, [customers]);
 
+  const findTierPrice = (duration: number) => {
+    const tier = tiers.find(t => t.duration === duration);
+    return tier ? tier.price : 0;
+  };
+
   const addCustomer = (customer: Omit<Customer, 'id'>) => {
     const newCustomer: Customer = { ...customer, id: crypto.randomUUID() };
     setCustomers([...customers, newCustomer]);
@@ -60,7 +65,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateCustomer = (updatedCustomer: Customer) => {
-    // The price is now passed from the form, so we don't recalculate it here.
     setCustomers(customers.map(c => (c.id === updatedCustomer.id ? updatedCustomer : c)));
     addToast('تم تحديث بيانات المشترك بنجاح', 'success');
   };
@@ -84,7 +88,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const renewedCustomer = {
             ...customer,
             startDate: newStartDate.toISOString(),
-            // Price is preserved from `...customer` spread. Do not recalculate.
+            // Re-fetch price in case tiers have changed
+            price: findTierPrice(customer.duration) 
         };
         
         return prevCustomers.map(c => c.id === id ? renewedCustomer : c);
