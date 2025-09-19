@@ -10,7 +10,7 @@ interface AppContextType {
   setExpenses: (expenses: Expense[]) => void;
   tiers: SubscriptionTier[];
   setTiers: (tiers: SubscriptionTier[]) => void;
-  addCustomer: (customer: Omit<Customer, 'id' | 'price'>) => void;
+  addCustomer: (customer: Omit<Customer, 'id'>) => void;
   updateCustomer: (customer: Customer) => void;
   deleteCustomer: (id: string) => void;
   renewCustomer: (id: string) => void;
@@ -53,22 +53,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return customers.filter(c => getSubscriptionStatus(c) === 'expiringSoon').length;
   }, [customers]);
 
-  const findTierPrice = (duration: number) => {
-    const tier = tiers.find(t => t.duration === duration);
-    return tier ? tier.price : 0;
-  };
-
-  const addCustomer = (customer: Omit<Customer, 'id' | 'price'>) => {
-    const price = findTierPrice(customer.duration);
-    const newCustomer: Customer = { ...customer, id: crypto.randomUUID(), price };
+  const addCustomer = (customer: Omit<Customer, 'id'>) => {
+    const newCustomer: Customer = { ...customer, id: crypto.randomUUID() };
     setCustomers([...customers, newCustomer]);
     addToast('تم إضافة مشترك بنجاح', 'success');
   };
 
   const updateCustomer = (updatedCustomer: Customer) => {
-    const price = findTierPrice(updatedCustomer.duration);
-    const newCustomer = {...updatedCustomer, price};
-    setCustomers(customers.map(c => (c.id === newCustomer.id ? newCustomer : c)));
+    // The price is now passed from the form, so we don't recalculate it here.
+    setCustomers(customers.map(c => (c.id === updatedCustomer.id ? updatedCustomer : c)));
     addToast('تم تحديث بيانات المشترك بنجاح', 'success');
   };
 
@@ -91,8 +84,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const renewedCustomer = {
             ...customer,
             startDate: newStartDate.toISOString(),
-            // Re-fetch price in case tiers have changed
-            price: findTierPrice(customer.duration) 
+            // Price is preserved from `...customer` spread. Do not recalculate.
         };
         
         return prevCustomers.map(c => c.id === id ? renewedCustomer : c);
