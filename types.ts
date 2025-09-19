@@ -1,3 +1,5 @@
+export type PaymentStatus = 'paid' | 'unpaid';
+
 export interface Customer {
   id: string;
   name: string;
@@ -5,6 +7,7 @@ export interface Customer {
   startDate: string; // ISO string
   duration: number; // in months
   price: number;
+  paymentStatus?: PaymentStatus;
 }
 
 export interface Expense {
