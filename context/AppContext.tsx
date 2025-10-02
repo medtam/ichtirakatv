@@ -1,7 +1,26 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
-import useLocalStorage from '../hooks/useLocalStorage';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { Customer, Expense, SubscriptionTier, AppData, Toast } from '../types';
 import { getSubscriptionStatus, getExpiryDate } from '../utils/dateUtils';
+
+// ✅ Firebase imports
+import { initializeApp } from "firebase/app";
+import { 
+  getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc 
+} from "firebase/firestore";
+
+// ✅ إعداد Firebase (غير هاد القيم عوضهم بالقيم ديالك من Firebase console)
+const firebaseConfig = {
+  apiKey: "AIzaSyBsL8pUR4ygIV4_WUpE8-06-rqcpSFND4g",
+  authDomain: "ichtirak-app.firebaseapp.com",
+  projectId: "ichtirak-app",
+  storageBucket: "ichtirak-app.firebasestorage.app",
+  messagingSenderId: "686012843393",
+  appId: "1:686012843393:web:8040e987181f3ac9bcd480",
+  measurementId: "G-C510BPS9JV"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 interface AppContextType {
   customers: Customer[];
@@ -36,11 +55,12 @@ const initialTiers: SubscriptionTier[] = [
 ];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [customers, setCustomers] = useLocalStorage<Customer[]>('customers', []);
-  const [expenses, setExpenses] = useLocalStorage<Expense[]>('expenses', []);
-  const [tiers, setTiers] = useLocalStorage<SubscriptionTier[]>('tiers', initialTiers);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [tiers, setTiers] = useState<SubscriptionTier[]>(initialTiers);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  // ✅ Toasts
   const addToast = (message: string, type: Toast['type'] = 'info') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
@@ -50,51 +70,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
+  // ✅ Expiring soon
   const expiringSoonCount = useMemo(() => {
     return customers.filter(c => getSubscriptionStatus(c) === 'expiringSoon').length;
   }, [customers]);
 
-  const findTierPrice = (duration: number) => {
-    const tier = tiers.find(t => t.duration === duration);
-    return tier ? tier.price : 0;
-  };
+  // ✅ Load data from Firestore
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      const snapshot = await getDocs(collection(db, "customers"));
+      setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Customer[]);
+    };
 
-  const addCustomer = (customer: Omit<Customer, 'id'>) => {
-    const newCustomer: Customer = { ...customer, id: crypto.randomUUID() };
+    const fetchExpenses = async () => {
+      const snapshot = await getDocs(collection(db, "expenses"));
+      setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Expense[]);
+    };
+
+    fetchCustomers();
+    fetchExpenses();
+  }, []);
+
+  // ✅ Customers CRUD
+  const addCustomer = async (customer: Omit<Customer, 'id'>) => {
+    const docRef = await addDoc(collection(db, "customers"), customer);
+    const newCustomer: Customer = { ...customer, id: docRef.id };
     setCustomers([...customers, newCustomer]);
     addToast('تم إضافة مشترك بنجاح', 'success');
   };
 
-  const updateCustomer = (updatedCustomer: Customer) => {
+  const updateCustomer = async (updatedCustomer: Customer) => {
+    const ref = doc(db, "customers", updatedCustomer.id);
+    await updateDoc(ref, updatedCustomer as any);
     setCustomers(customers.map(c => (c.id === updatedCustomer.id ? updatedCustomer : c)));
     addToast('تم تحديث بيانات المشترك بنجاح', 'success');
   };
 
-  const deleteCustomer = (id: string) => {
+  const deleteCustomer = async (id: string) => {
+    await deleteDoc(doc(db, "customers", id));
     setCustomers(customers.filter(c => c.id !== id));
     addToast('تم حذف المشترك بنجاح', 'success');
   };
-  
+
   const renewCustomer = (id: string) => {
     setCustomers(prevCustomers => {
-        const customer = prevCustomers.find(c => c.id === id);
-        if (!customer) return prevCustomers;
-        
-        const expiryDate = getExpiryDate(customer.startDate, customer.duration);
-        const today = new Date();
-        
-        // If expired, renew from today. If not, extend from the expiry date.
-        const newStartDate = expiryDate < today ? today : expiryDate;
-        
-        const renewedCustomer: Customer = {
-            ...customer,
-            startDate: newStartDate.toISOString(),
-            // Re-fetch price in case tiers have changed
-            price: findTierPrice(customer.duration),
-            paymentStatus: 'unpaid'
-        };
-        
-        return prevCustomers.map(c => c.id === id ? renewedCustomer : c);
+      const customer = prevCustomers.find(c => c.id === id);
+      if (!customer) return prevCustomers;
+
+      const expiryDate = getExpiryDate(customer.startDate, customer.duration);
+      const today = new Date();
+
+      const newStartDate = expiryDate < today ? today : expiryDate;
+
+      const renewedCustomer: Customer = {
+        ...customer,
+        startDate: newStartDate.toISOString(),
+        price: tiers.find(t => t.duration === customer.duration)?.price || 0,
+        paymentStatus: 'unpaid'
+      };
+
+      updateCustomer(renewedCustomer);
+      return prevCustomers.map(c => c.id === id ? renewedCustomer : c);
     });
     addToast('تم تجديد الاشتراك بنجاح! الرجاء تسجيل الدفعة.', 'success');
   };
@@ -104,22 +140,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addToast('تم تسجيل الدفعة بنجاح', 'success');
   };
 
-  const addExpense = (expense: Omit<Expense, 'id'>) => {
-    const newExpense: Expense = { ...expense, id: crypto.randomUUID() };
+  // ✅ Expenses CRUD
+  const addExpense = async (expense: Omit<Expense, 'id'>) => {
+    const docRef = await addDoc(collection(db, "expenses"), expense);
+    const newExpense: Expense = { ...expense, id: docRef.id };
     setExpenses([...expenses, newExpense]);
     addToast('تم إضافة المصروف بنجاح', 'success');
   };
 
-  const updateExpense = (updatedExpense: Expense) => {
+  const updateExpense = async (updatedExpense: Expense) => {
+    const ref = doc(db, "expenses", updatedExpense.id);
+    await updateDoc(ref, updatedExpense as any);
     setExpenses(expenses.map(e => (e.id === updatedExpense.id ? updatedExpense : e)));
-     addToast('تم تحديث المصروف بنجاح', 'success');
+    addToast('تم تحديث المصروف بنجاح', 'success');
   };
 
-  const deleteExpense = (id: string) => {
+  const deleteExpense = async (id: string) => {
+    await deleteDoc(doc(db, "expenses", id));
     setExpenses(expenses.filter(e => e.id !== id));
     addToast('تم حذف المصروف بنجاح', 'success');
   };
 
+  // ✅ Data backup/restore
   const getAppData = (): AppData => ({
     customers,
     expenses,
@@ -161,3 +203,4 @@ export const useAppContext = () => {
   }
   return context;
 };
+
