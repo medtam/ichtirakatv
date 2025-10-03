@@ -3,14 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#4f46e5">
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="مدير الاشتراكات">
-    <!-- End PWA Meta Tags -->
     <title>مدير الاشتراكات</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#4f46e5" />
+    <!-- End PWA Meta Tags -->
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,8 +21,8 @@
             fontFamily: {
               sans: ['Tajawal', 'sans-serif'],
             },
-          },
-        },
+          }
+        }
       }
     </script>
     <style>
@@ -34,20 +33,30 @@
   <script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "recharts": "https://aistudiocdn.com/recharts@^3.2.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "jspdf": "https://aistudiocdn.com/jspdf@^3.0.3",
-    "jspdf-autotable": "https://aistudiocdn.com/jspdf-autotable@^5.0.2",
-    "xlsx": "https://aistudiocdn.com/xlsx@^0.18.5"
+    "react/": "https://esm.sh/react@^19.1.1/",
+    "react": "https://esm.sh/react@^19.1.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.1/",
+    "recharts": "https://esm.sh/recharts@^3.1.2",
+    "xlsx": "https://esm.sh/xlsx@^0.18.5",
+    "jspdf-autotable": "https://esm.sh/jspdf-autotable@^5.0.2",
+    "jspdf": "https://esm.sh/jspdf@^3.0.1",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.45.0"
   }
 }
 </script>
 </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          }, err => {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>
