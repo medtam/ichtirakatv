@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Expense } from '../types';
 import { useAppContext } from '../context/AppContext';
@@ -24,12 +23,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onClose, expenseToEdit }) => 
     }
   }, [expenseToEdit]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (expenseToEdit) {
-      updateExpense({ ...expenseToEdit, date, type, amount: parseFloat(amount), notes });
+      await updateExpense({ ...expenseToEdit, date, type, amount: parseFloat(amount), notes });
     } else {
-      addExpense({ date, type, amount: parseFloat(amount), notes });
+      await addExpense({ date, type, amount: parseFloat(amount), notes });
     }
     onClose();
   };
