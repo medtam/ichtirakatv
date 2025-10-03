@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Get Supabase configuration from environment or use defaults for development
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://qztkjyoiheuwsryipqma.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6dGtqeW9paGV1d3NyeWlwcW1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MTcxOTMsImV4cCI6MjA3NDk5MzE5M30.X8UsXDz7cM9PMwXt5zVTnlO-F8D9uVsW2eLNtfYLJzA';
+// Supabase configuration
+const supabaseUrl = 'https://qztkjyoiheuwsryipqma.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6dGtqeW9paGV1d3NyeWlwcW1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MTcxOTMsImV4cCI6MjA3NDk5MzE5M30.X8UsXDz7cM9PMwXt5zVTnlO-F8D9uVsW2eLNtfYLJzA';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
