@@ -36,13 +36,13 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ onClose, customerToEdit }) 
     }
   }, [customerToEdit, tiers]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const customerData = { name, phone, startDate, duration: Number(duration), price: Number(price), paymentStatus };
     if (customerToEdit) {
-      updateCustomer({ ...customerToEdit, ...customerData });
+      await updateCustomer({ ...customerToEdit, ...customerData });
     } else {
-      addCustomer(customerData);
+      await addCustomer(customerData);
     }
     onClose();
   };
