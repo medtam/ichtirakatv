@@ -18,7 +18,7 @@ const CustomersPage: React.FC = () => {
         isOpen: false,
         title: '',
         message: '',
-        onConfirm: () => {},
+        onConfirm: async () => {},
         confirmText: 'تأكيد',
         confirmButtonClass: ''
     });
@@ -38,8 +38,8 @@ const CustomersPage: React.FC = () => {
             isOpen: true,
             title: 'تأكيد التجديد',
             message: 'هل أنت متأكد من رغبتك في تجديد هذا الاشتراك؟ سيتم تمديد الاشتراك وتحديث حالة الدفع إلى "لم يدفع".',
-            onConfirm: () => {
-                renewCustomer(id);
+            onConfirm: async () => {
+                await renewCustomer(id);
                 setConfirmModal({ ...confirmModal, isOpen: false });
             },
             confirmText: 'تجديد',
@@ -52,8 +52,8 @@ const CustomersPage: React.FC = () => {
             isOpen: true,
             title: 'تأكيد الحذف',
             message: 'هل أنت متأكد من رغبتك في حذف هذا المشترك؟ لا يمكن التراجع عن هذا الإجراء.',
-            onConfirm: () => {
-                deleteCustomer(id);
+            onConfirm: async () => {
+                await deleteCustomer(id);
                 setConfirmModal({ ...confirmModal, isOpen: false });
             },
             confirmText: 'حذف',
@@ -61,8 +61,8 @@ const CustomersPage: React.FC = () => {
         });
     };
     
-    const handleMarkAsPaid = (id: string) => {
-        markCustomerAsPaid(id);
+    const handleMarkAsPaid = async (id: string) => {
+        await markCustomerAsPaid(id);
     };
 
     const filteredCustomers = useMemo(() => {
