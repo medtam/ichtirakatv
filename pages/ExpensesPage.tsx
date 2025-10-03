@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Expense } from '../types';
@@ -14,7 +13,7 @@ const ExpensesPage: React.FC = () => {
         isOpen: false,
         title: '',
         message: '',
-        onConfirm: () => {}
+        onConfirm: async () => {}
     });
 
     const openFormForEdit = (expense: Expense) => {
@@ -32,8 +31,8 @@ const ExpensesPage: React.FC = () => {
             isOpen: true,
             title: 'تأكيد الحذف',
             message: 'هل أنت متأكد من رغبتك في حذف هذا المصروف؟',
-            onConfirm: () => {
-                deleteExpense(id);
+            onConfirm: async () => {
+                await deleteExpense(id);
                 setConfirmModal({ ...confirmModal, isOpen: false });
             }
         });
