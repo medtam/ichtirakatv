@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { SubscriptionTier, AppData } from '../types';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -10,6 +10,9 @@ const SettingsPage: React.FC = () => {
     const [pendingFile, setPendingFile] = useState<File | null>(null);
     const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false);
 
+    useEffect(() => {
+        setLocalTiers([...tiers]);
+    }, [tiers]);
 
     const handlePriceChange = (duration: number, price: string) => {
         setLocalTiers(
@@ -19,9 +22,8 @@ const SettingsPage: React.FC = () => {
         );
     };
 
-    const handleSaveTiers = () => {
-        setTiers(localTiers);
-        addToast('تم حفظ الأسعار بنجاح!', 'success');
+    const handleSaveTiers = async () => {
+        await setTiers(localTiers);
     };
 
     const handleBackup = () => {
@@ -44,7 +46,6 @@ const SettingsPage: React.FC = () => {
 
         setPendingFile(file);
         setIsRestoreConfirmOpen(true);
-        // Clear input value so the same file can be selected again if needed
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
@@ -54,18 +55,15 @@ const SettingsPage: React.FC = () => {
         if (!pendingFile) return;
 
         const reader = new FileReader();
-        reader.onload = e => {
+        reader.onload = async e => {
             try {
                 const text = e.target?.result;
                 if (typeof text !== 'string') throw new Error("File could not be read");
                 
                 const data = JSON.parse(text) as AppData;
-                const success = loadAppData(data);
-                if (success) {
-                    setLocalTiers([...data.tiers]);
-                }
+                await loadAppData(data);
             } catch (error) {
-                addToast('فشل في استعادة البيانات. الملف غير صالح أو تالف.', 'error');
+                addToast('فشل في قراءة الملف. الملف غير صالح أو تالف.', 'error');
             }
         };
         reader.readAsText(pendingFile);
@@ -106,7 +104,7 @@ const SettingsPage: React.FC = () => {
             </div>
 
             <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">إدارة البيانات (يعمل بدون انترنت)</h2>
+                <h2 className="text-xl font-bold text-gray-800 mb-4">إدارة البيانات</h2>
                 <div className="flex flex-col md:flex-row gap-4">
                     <button onClick={handleBackup} className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                         نسخ احتياطي للبيانات
@@ -117,7 +115,7 @@ const SettingsPage: React.FC = () => {
                     </button>
                 </div>
                 <p className="mt-4 text-sm text-gray-500">
-                    يمكنك حفظ نسخة من جميع بياناتك (المشتركين، المصاريف، الإعدادات) في ملف JSON على جهازك. يمكنك استخدام هذا الملف لاحقاً لاستعادة بياناتك.
+                    يمكنك حفظ نسخة من جميع بياناتك (المشتركين، المصاريف، الإعدادات) في ملف JSON على جهازك. يمكنك استخدام هذا الملف لاحقاً لاستعادة بياناتك في قاعدة البيانات السحابية.
                 </p>
             </div>
 
@@ -126,7 +124,7 @@ const SettingsPage: React.FC = () => {
                 onClose={() => setIsRestoreConfirmOpen(false)}
                 onConfirm={handleConfirmRestore}
                 title="تأكيد استعادة البيانات"
-                message="هل أنت متأكد من رغبتك في استعادة البيانات؟ سيتم الكتابة فوق جميع البيانات الحالية."
+                message="هل أنت متأكد من رغبتك في استعادة البيانات؟ سيتم الكتابة فوق جميع البيانات الحالية في قاعدة البيانات."
                 confirmText="استعادة"
                 confirmButtonClass="bg-gray-600 hover:bg-gray-700 focus:ring-gray-500"
             />
